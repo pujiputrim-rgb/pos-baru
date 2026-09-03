@@ -1,0 +1,169 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Validator;
+use Throwable;
+
+class UserController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        try {
+            $users = User::get();
+            return response()->json([
+                'status'=> true,
+                'massage'=>'Fetch data success',
+                'data'=> $users,
+            ]);
+        } catch (Throwable $th) {
+            return response()->json([
+                'status'=> false,
+                'message'=> 'Internal server error',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(),[
+                'name' => 'required|string',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:3'
+            ]);
+            if($validation->fails()){
+                return response()->json([
+                    'message'=> 'Validation Fail',
+                    'errors' => $validation->errors()
+                ], 422);
+            }
+
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+            ]);
+            return response()->json([
+                'status'=> true,
+                'message'=>'Create user success',
+                'data'=> $user,
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status'=>false,
+                'message'=> 'Internal server error',
+                'errors'=> $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'message' => 'Fetch edit user success',
+                'data' => $user,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal error server',
+                'errors' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        try {
+                $validation = Validator::make($request->all(), [
+                    'name' => 'required|string',
+                    'email' => 'required|email|unique:users,email,' . $id,
+                    'password' => 'required|min:3'
+                ]);
+                if ($validation->fails()) {
+                    return response()->json([
+                        'message' => 'Validation Fail',
+                        'errors' => $validation->errors()
+                    ], 422);
+                }
+                $user = User::find($id);
+                $user->name = $request->name;
+                $user->email = $request->email;
+
+                if ($request->filled('password')){
+                    $user->password = $request->password;
+                }
+                $user->save();
+                return response()->json([
+                'status' => true,
+                'message' => 'Update user success',
+                'data' => $user,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal error server',
+                'errors' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(User $user)
+    {
+        try {
+            // Hapus data user
+            $user->delete();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Delete user success',
+                'data'    => $user,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Internal server error',
+                'errors'  => $th->getMessage()
+            ], 500);
+        }
+    }
+}
